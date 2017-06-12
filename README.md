@@ -1,6 +1,10 @@
 # keychaineditor
 KeychainEditor is a CLI to interact with iOS's [Keychain](https://developer.apple.com/library/ios/documentation/Security/Conceptual/keychainServConcepts/01introduction/introduction.html) on a jailbroken iDevice. Keychain is a secure storage provided by the iOS to save client-side secrets/certificates onto the device. KeychainEditor is useful to dump/edit/delete a keychain item. The tool will greatly help pentesters and security researches alike who would want to poke at application's keychain usage during iOS APT (Application Penetration Test). It should be noted that the tool currently supports Generic Passwords (Genp) only and can decode the new constrainsts applied on an item.
 
+## Original version
+
+The original version of this tools hash been created by [NitinJami](https://github.com/NitinJami/keychaineditor). This version has been updated to dump public and private keys and edit (change or delete) all keychain entries, not only generic passwords. The framewors have been updated to Swift 3.
+
 ## Talk
 
 For more information on the journey in decoding the `SecAccessControl` flags.
@@ -53,9 +57,9 @@ Recommended approach is to install using the `dpkg` command. SCP the .deb file i
 
 To Un-install:
 
-`dpkg -r com.nitin.keychaineditor`
+`dpkg -r com.andrivet.keychaineditor`
 
-*Note:* For manual installation, iOS devices do not come with Swift Runtime dylibs. You need to manually copy them to the device with the binary. The required frameworks are included in the repository.
+*Note:* For manual installation, iOS devices do not come with Swift Runtime dylibs. You need to manually copy them to the device with the binary. The required frameworks are included in the repository (updated for Swift 3).
 
 ## Build Notes
 
