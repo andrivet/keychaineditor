@@ -9,17 +9,14 @@ func handleSearch(secClasses: [NSString], query: String?) {
   print(convertToJSON(for: items))
 }
 
-func handleEdit(secClass: CFString, account: String?, service: String?, agroup: String?, data: String?) {
-  guard let account = account, let service = service, let data = data else { cli.printError("Missing parameters"); cli.printUsage(); return }
-  
-  let status = updateKeychainItem(secClass: secClass, account: account, service: service, data: decodeIfBase64(for: data), agroup: agroup)
+func handleEdit(secClass: CFString, account: String?, service: String?, agroup: String?, tag: String?, data: String?) {
+  guard let data = data else { cli.printError("Missing data"); cli.printUsage(); return }
+  let status = updateKeychainItem(secClass: secClass, account: account, service: service, agroup: agroup, tag: tag, data: decodeIfBase64(for: data))
   print(errorMessage(for: status))
 }
 
-func handleDelete(secClass: CFString, account: String?, service: String?, agroup: String?) {
-  guard let account = account, let service = service else { cli.printError("Missing parameters"); cli.printUsage(); return }
-  
-  let status = deleteKeychainItem(secClass: secClass, account: account, service: service, agroup: agroup)
+func handleDelete(secClass: CFString, account: String?, service: String?, agroup: String?, tag: String?) {
+  let status = deleteKeychainItem(secClass: secClass, account: account, service: service, agroup: agroup, tag: tag)
   print(errorMessage(for: status))
 }
 
@@ -55,7 +52,8 @@ let delete = BoolOption(shortFlag: "d", longFlag: "delete", helpMessage:"Delete 
 
 let account = StringOption(shortFlag: "a", longFlag:"account", helpMessage: "Account name")
 let service = StringOption(shortFlag: "s", longFlag:"service", helpMessage: "Service name")
-let agroup = StringOption(shortFlag: "r", longFlag:"agroup", helpMessage: "AGroup name")
+let agroup = StringOption(shortFlag: "r", longFlag:"agroup", helpMessage: "Application Group name")
+let tag = StringOption(shortFlag: "t", longFlag:"tag", helpMessage: "Application tag")
 
 let data = StringOption(shortFlag: "v", longFlag:"data", helpMessage: "Data")
 
@@ -63,7 +61,7 @@ let help = BoolOption(shortFlag: "h", longFlag: "help", helpMessage:"Display com
 
 cli.addOptions(genericPasswords, internetPasswords, identities, certificates, keys, all)
 cli.addOptions(find, edit, delete)
-cli.addOptions(account, service, agroup)
+cli.addOptions(account, service, agroup, tag)
 cli.addOptions(data)
 cli.addOptions(help)
 
@@ -102,12 +100,12 @@ if find.wasSet
 else if edit.wasSet
 {
   checkOnlyOneClass(secClasses)
-  handleEdit(secClass: secClasses[0], account: account.value, service: service.value, agroup: agroup.value, data: data.value)
+  handleEdit(secClass: secClasses[0], account: account.value, service: service.value, agroup: agroup.value, tag: tag.value, data: data.value)
 }
 else if delete.wasSet
 {
   checkOnlyOneClass(secClasses)
-  handleDelete(secClass: secClasses[0], account: account.value, service: service.value, agroup: agroup.value)
+  handleDelete(secClass: secClasses[0], account: account.value, service: service.value, agroup: agroup.value, tag: tag.value)
 }
 else
 {

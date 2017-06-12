@@ -1,18 +1,19 @@
 import Security
 import Foundation
 
+let accessiblityConstants: [NSString] = [kSecAttrAccessibleAfterFirstUnlock,
+                                         kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
+                                         kSecAttrAccessibleAlways,
+                                         kSecAttrAccessibleWhenPasscodeSetThisDeviceOnly,
+                                         kSecAttrAccessibleAlwaysThisDeviceOnly,
+                                         kSecAttrAccessibleWhenUnlocked,
+                                         kSecAttrAccessibleWhenUnlockedThisDeviceOnly]
+
+
 func dumpKeychainItems(secClasses: [NSString]) -> [Dictionary<String, String>] {
     var returnedItemsInGenericArray: AnyObject? = nil
     var finalArrayOfKeychainItems = [Dictionary<String, String>]()
     var status: OSStatus = -1
-
-    let accessiblityConstants: [NSString] = [kSecAttrAccessibleAfterFirstUnlock,
-                                             kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
-                                             kSecAttrAccessibleAlways,
-                                             kSecAttrAccessibleWhenPasscodeSetThisDeviceOnly,
-                                             kSecAttrAccessibleAlwaysThisDeviceOnly,
-                                             kSecAttrAccessibleWhenUnlocked,
-                                             kSecAttrAccessibleWhenUnlockedThisDeviceOnly]
 
     for eachKSecClass in secClasses {
         for eachConstant in accessiblityConstants {
@@ -35,45 +36,50 @@ func dumpKeychainItems(secClasses: [NSString]) -> [Dictionary<String, String>] {
     return finalArrayOfKeychainItems
 }
 
+
 func updateKeychainItem(secClass: CFString = kSecClassGenericPassword,
-                account: String,
-                service: String,
-                data: String,
-                agroup: String? = nil) -> OSStatus {
+                account: String?,
+                service: String?,
+                agroup: String?,
+                tag: String?,
+                data: String) -> OSStatus {
 
     guard let updatedData = data.data(using: String.Encoding.utf8) else {
         NSLog("UpdateKeychainItem() -> Error while unwrapping user-supplied data.")
         exit(EXIT_FAILURE)
     }
 
-    var query = [
-        kSecClass as String         :   secClass as String,
-        kSecAttrAccount as String   :   account,
-        kSecAttrService as String   :   service
-    ]
-    if let unwrappedAGroup = agroup {
-        query[kSecAttrAccessGroup as String] = unwrappedAGroup
-    }
+    var query = [ kSecClass as String : secClass as String]
+    if let account = account { query[kSecAttrAccount as String] = account }
+    if let service = service { query[kSecAttrService as String] = service }
+    if let agroup = agroup { query[kSecAttrAccessGroup as String] = agroup }
+    if let tag = tag { query[kSecAttrApplicationTag as String] = tag }
 
     let dataToUpdate = [kSecValueData as String : updatedData]
     let status: OSStatus = SecItemUpdate(query as CFDictionary, dataToUpdate as CFDictionary)
     return status
 }
 
+
 func deleteKeychainItem(secClass: CFString = kSecClassGenericPassword,
-                account: String,
-                service: String,
-                agroup: String? = nil) -> OSStatus {
+                account: String?,
+                service: String?,
+                agroup: String?,
+                tag: String?) -> OSStatus {
+  
+  var status: OSStatus = errSecSuccess
+  
+  for eachConstant in accessiblityConstants {
+    var query = [ kSecClass as String : secClass as String, kSecAttrAccessible as String : eachConstant ] as [String : Any]
+    if let account = account { query[kSecAttrAccount as String] = account }
+    if let service = service { query[kSecAttrService as String] = service }
+    if let agroup = agroup { query[kSecAttrAccessGroup as String] = agroup }
+    if let tag = tag { query[kSecAttrApplicationTag as String] = tag }
 
-    var query = [
-        kSecClass as String         :   secClass as String,
-        kSecAttrAccount as String   :   account,
-        kSecAttrService as String   :   service
-    ]
-    if let unwrappedAGroup = agroup {
-        query[kSecAttrAccessGroup as String] = unwrappedAGroup
+    status = SecItemDelete(query as CFDictionary)
+    if status == errSecSuccess {
+      return errSecSuccess
     }
-
-    let status: OSStatus = SecItemDelete(query as CFDictionary)
-    return status
+  }
+  return status
 }
