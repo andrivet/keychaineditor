@@ -10,12 +10,14 @@
 		BE4488E91EE94E77006AEBB3 /* keychaineditor */ = {isa = PBXFileReference; lastKnownFileType = folder; path = keychaineditor; sourceTree = "<group>"; };
 		BE67E8901EE0395400979D57 /* src */ = {isa = PBXFileReference; lastKnownFileType = folder; path = src; sourceTree = "<group>"; };
 		BE67E8951EE0399F00979D57 /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = "<group>"; };
+		BE879B741EEE86790095B2AB /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
 		BE67E87D1EE0372B00979D57 = {
 			isa = PBXGroup;
 			children = (
+				BE879B741EEE86790095B2AB /* README.md */,
 				BE4488E91EE94E77006AEBB3 /* keychaineditor */,
 				BE67E8901EE0395400979D57 /* src */,
 				BE67E8951EE0399F00979D57 /* Makefile */,
