@@ -1,9 +1,9 @@
-Package: com.nitin.keychaineditor
+Package: com.andrivet.keychaineditor
 Name: Keychain Editor
-Version: 2.1
+Version: 3.0
 Architecture: iphoneos-arm
 Description: CLI to dump keychain items including the new access controls. Supports only 64-bit arch.
-Homepage: https://github.com/NitinJami/keychaineditor
-Maintainer: Nitin Jami <nitin.jami@gmail.com>
-Author: Nitin Jami <nitin.jami@gmail.com>
+Homepage: https://github.com/andrivet/keychaineditor
+Maintainer: Sebastien Andrivet <sebastien@andrivet.com>
+Author: Sebastien Andrivet <sebastien@andrivet.com>
 Section: Tools
