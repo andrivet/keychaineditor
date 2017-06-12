@@ -8,7 +8,7 @@ TOOLCHAIN        = Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/$(PLATFORM)
 TOOLCHAIN_PATH  = $(shell xcode-select --print-path)/$(TOOLCHAIN)
 
 ## SWIFT COMPILER SETUP ##
-SWIFT        =  $(shell xcrun -f swift) -frontend -c -color-diagnostics
+SWIFT        =  $(shell xcrun -f swift) -frontend -c
 SWIFT_FLAGS  = -g -Onone $(TARGET) \
                -import-objc-header src/bridgingheader.h \
               -sdk $(SDK_PATH)
