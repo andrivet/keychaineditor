@@ -1,44 +1,11 @@
 import Security
 import Foundation
 
-func addKeychainItem() -> OSStatus {
-
-    let account: String = "Test Account"
-    let service: String = "Test Service"
-    let accessibleConstant = kSecAttrAccessibleAlways
-    let data: Data = "".data(using: String.Encoding.utf8)!
-
-    var status: OSStatus = -1
-    var error: Unmanaged<CFError>?
-
-    if let _ = SecAccessControlCreateWithFlags(kCFAllocatorDefault,
-            kSecAttrAccessibleWhenUnlocked, .devicePasscode, &error) {
-
-        let query = [
-            kSecClass as String         :   kSecClassGenericPassword as String,
-            kSecAttrAccount as String   :   account,
-            kSecAttrService as String   :   service,
-            kSecAttrAccessible as String:   accessibleConstant,
-            // Uncomment the following line to add AccessControl. Make sure
-            // "acl" is defined above in the if let scope.
-            //kSecAttrAccessControl as String :   acl,
-            kSecValueData as String     :   data
-            ] as [String : Any]
-
-        status = SecItemAdd(query as CFDictionary, nil)
-    } else {
-        print("[addItem::SecAccessControl] - \(error?.takeUnretainedValue())")
-    }
-    return status
-}
-
-func dumpKeychainItems() -> [Dictionary<String, String>] {
+func dumpKeychainItems(secClasses: [NSString]) -> [Dictionary<String, String>] {
     var returnedItemsInGenericArray: AnyObject? = nil
-    var finalArrayOfKeychainItems = [Dictionary<String, Any>]()
-    var returnedKeychainItems = [Dictionary<String, String>]()
+    var finalArrayOfKeychainItems = [Dictionary<String, String>]()
     var status: OSStatus = -1
 
-    let secClasses: [NSString] = [kSecClassGenericPassword]
     let accessiblityConstants: [NSString] = [kSecAttrAccessibleAfterFirstUnlock,
                                              kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
                                              kSecAttrAccessibleAlways,
@@ -60,25 +27,15 @@ func dumpKeychainItems() -> [Dictionary<String, String>] {
             status = SecItemCopyMatching(query as CFDictionary, &returnedItemsInGenericArray)
 
             if status == errSecSuccess {
-                finalArrayOfKeychainItems =  finalArrayOfKeychainItems
-                    + (returnedItemsInGenericArray as! Array)
+              finalArrayOfKeychainItems =  finalArrayOfKeychainItems + canonicalizeTypesInReturnedDicts(secClass: eachKSecClass, items: returnedItemsInGenericArray as! Array)
             }
         }
     }
 
-    // The value of status is not really the actual status that I like to
-    // have. The status varies according to constant that I am dumping with.
-    // Hence, if the final array contains at least one value, then I will consider
-    // it as a success. Or else, just return the last status value.
-
-    if (finalArrayOfKeychainItems.count >= 1) {
-        status = errSecSuccess
-        returnedKeychainItems = canonicalizeTypesInReturnedDicts(items: finalArrayOfKeychainItems)
-    }
-    return returnedKeychainItems
+    return finalArrayOfKeychainItems
 }
 
-func updateKeychainItem(at secClass: String = kSecClassGenericPassword as String,
+func updateKeychainItem(secClass: CFString = kSecClassGenericPassword,
                 account: String,
                 service: String,
                 data: String,
@@ -90,7 +47,7 @@ func updateKeychainItem(at secClass: String = kSecClassGenericPassword as String
     }
 
     var query = [
-        kSecClass as String         :   secClass,
+        kSecClass as String         :   secClass as String,
         kSecAttrAccount as String   :   account,
         kSecAttrService as String   :   service
     ]
@@ -103,13 +60,13 @@ func updateKeychainItem(at secClass: String = kSecClassGenericPassword as String
     return status
 }
 
-func deleteKeychainItem(at secClass: String = kSecClassGenericPassword as String,
+func deleteKeychainItem(secClass: CFString = kSecClassGenericPassword,
                 account: String,
                 service: String,
                 agroup: String? = nil) -> OSStatus {
 
     var query = [
-        kSecClass as String         :   secClass,
+        kSecClass as String         :   secClass as String,
         kSecAttrAccount as String   :   account,
         kSecAttrService as String   :   service
     ]

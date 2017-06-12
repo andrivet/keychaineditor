@@ -1,65 +1,115 @@
 import Foundation
 
-func printUsage() {
-    print("USAGE: \(CommandLine.arguments[0]) [commands]")
-    print("Commands Description")
-    print("  -v     version")
-    print("  -f     Search. Requires a query string as the second argument.")
-    print("  -e     Edit. Requires --account STRING --service STRING [--agroup STRING] --data STRING")
-    print("  -d     Delete. Requires --account STRING --service STRING [--agroup STRING]")
-    print("NOTES:")
-    print(" * Account and Service names are used to uniquely identify a item. An optional AccessGroup can also be passed to identify the item.")
-    print(" * If there is no Account name pass an empty string.")
-    print(" * Search is from the following group {Account, Service, AccessGroup, Protection} and is case in-sensitive.")
-    print("EXAMPLES:")
-    print(" * To Dump entire keychain: $ keychaineditor")
-    print(" * Limit dump by searching: $ keychaineditor -f 'test'")
-    print(" * Edit a keychain item:    $ keychaineditor -e --account 'TestAccount' --service 'TestService' --data 'TestData'")
-    print(" * Delete a keychain item:  $ keychaineditor -d --account 'TestAccount' --service 'TestService'")
-    exit(EXIT_FAILURE)
+let cli = CommandLine()
+
+func handleSearch(secClasses: [NSString], query: String?) {
+  guard let query = query else { cli.printError("Missing query"); cli.printUsage(); return }
+  
+  let items = search(for: query, in: dumpKeychainItems(secClasses: secClasses))
+  print(convertToJSON(for: items))
 }
 
-func handleSearch(args: UserDefaults) {
-    if let query = args.string(forKey: "f") {
-        let items = search(for: query, in: dumpKeychainItems())
-        print(convertToJSON(for: items))
-    } else {
-        printUsage()
-    }
+func handleEdit(secClass: CFString, account: String?, service: String?, agroup: String?, data: String?) {
+  guard let account = account, let service = service, let data = data else { cli.printError("Missing parameters"); cli.printUsage(); return }
+  
+  let status = updateKeychainItem(secClass: secClass, account: account, service: service, data: decodeIfBase64(for: data), agroup: agroup)
+  print(errorMessage(for: status))
 }
 
-func handleEdit(args: UserDefaults) {
-    if let account = args.string(forKey: "-account") , let service = args.string(forKey: "-service") , let data = args.string(forKey: "-data") {
-        let status = updateKeychainItem(account: account, service: service, data: decodeIfBase64(for: data), agroup: args.string(forKey: "-agroup"))
-        print(errorMessage(for: status))
-    } else {
-        printUsage()
-    }
+func handleDelete(secClass: CFString, account: String?, service: String?, agroup: String?) {
+  guard let account = account, let service = service else { cli.printError("Missing parameters"); cli.printUsage(); return }
+  
+  let status = deleteKeychainItem(secClass: secClass, account: account, service: service, agroup: agroup)
+  print(errorMessage(for: status))
 }
 
-func handleDelete(args: UserDefaults) {
-    if let account = args.string(forKey: "-account") , let service = args.string(forKey: "-service") {
-        let status = deleteKeychainItem(account: account, service: service, agroup: args.string(forKey: "-agroup"))
-        print(errorMessage(for: status))
-    } else {
-        printUsage()
-    }
+func handleDump(secClasses: [NSString]) {
+ 
+  let items = dumpKeychainItems(secClasses: secClasses);
+  print(convertToJSON(for: items))
+}
+
+func checkOnlyOneClass(_ secClasses: [NSString]) {
+  
+  if secClasses.count > 1
+  {
+    cli.printError("Please specify only one class (-g, -n, -i, -c, or -k)")
+    exit(EX_USAGE)
+  }
 }
 
 /*
   Start of Program.
 */
 
-guard CommandLine.arguments.count >= 2 else {
-    print(convertToJSON(for: dumpKeychainItems()))
-    exit(EXIT_SUCCESS)
+let genericPasswords = BoolOption(shortFlag: "g", longFlag: "generic", helpMessage:"Dump Generic passwords")
+let internetPasswords = BoolOption(shortFlag: "n", longFlag: "internet", helpMessage:"Dump Internet passwords")
+let identities = BoolOption(shortFlag: "i", longFlag: "identities", helpMessage:"Dump Identities")
+let certificates = BoolOption(shortFlag: "c", longFlag: "certificates", helpMessage:"Dump certificates")
+let keys = BoolOption(shortFlag: "k", longFlag: "keys", helpMessage:"Dump Keys")
+let all = BoolOption(shortFlag: "A", longFlag: "all", helpMessage:"Dump all items")
+
+let find = StringOption(shortFlag: "f", longFlag: "find", helpMessage:"Search items")
+let edit = BoolOption(shortFlag: "e", longFlag: "edit", helpMessage:"Edit items")
+let delete = BoolOption(shortFlag: "d", longFlag: "delete", helpMessage:"Delete items")
+
+let account = StringOption(shortFlag: "a", longFlag:"account", helpMessage: "Account name")
+let service = StringOption(shortFlag: "s", longFlag:"service", helpMessage: "Service name")
+let agroup = StringOption(shortFlag: "r", longFlag:"agroup", helpMessage: "AGroup name")
+
+let data = StringOption(shortFlag: "v", longFlag:"data", helpMessage: "Data")
+
+let help = BoolOption(shortFlag: "h", longFlag: "help", helpMessage:"Display command line options")
+
+cli.addOptions(genericPasswords, internetPasswords, identities, certificates, keys, all)
+cli.addOptions(find, edit, delete)
+cli.addOptions(account, service, agroup)
+cli.addOptions(data)
+cli.addOptions(help)
+
+do
+{
+  try cli.parse()
+}
+catch
+{
+  cli.printUsage(error)
+  exit(EX_USAGE)
 }
 
-switch CommandLine.arguments[1] {
-case "-v": print("KeychainEditor Version = 2.1")
-case "-f": handleSearch(args: UserDefaults.standard)
-case "-e": handleEdit(args: UserDefaults.standard)
-case "-d": handleDelete(args: UserDefaults.standard)
-case "-h": printUsage()
-default: printUsage()
+if help.wasSet
+{
+  cli.printUsage()
+  exit(EX_USAGE)
+}
+
+var secClasses: [NSString] = []
+let secAllClasses: [NSString] = [kSecClassGenericPassword, kSecClassInternetPassword, kSecClassIdentity, kSecClassCertificate, kSecClassKey]
+
+if genericPasswords.wasSet { secClasses.append(kSecClassGenericPassword) }
+if internetPasswords.wasSet { secClasses.append(kSecClassInternetPassword) }
+if identities.wasSet { secClasses.append(kSecClassIdentity) }
+if certificates.wasSet { secClasses.append(kSecClassCertificate) }
+if keys.wasSet { secClasses.append(kSecClassKey) }
+if all.wasSet { secClasses = secAllClasses }
+
+if secClasses.count <= 0 { secClasses = secAllClasses }
+
+if find.wasSet
+{
+  handleSearch(secClasses: secClasses, query: find.value)
+}
+else if edit.wasSet
+{
+  checkOnlyOneClass(secClasses)
+  handleEdit(secClass: secClasses[0], account: account.value, service: service.value, agroup: agroup.value, data: data.value)
+}
+else if delete.wasSet
+{
+  checkOnlyOneClass(secClasses)
+  handleDelete(secClass: secClasses[0], account: account.value, service: service.value, agroup: agroup.value)
+}
+else
+{
+  handleDump(secClasses: secClasses)
 }
